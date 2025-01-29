@@ -11,6 +11,7 @@ import appStore from './Components/utils/appStore'
 import EditProfile from './Components/EditProfile'
 import Connections from './Components/Connections'
 import Request from './Components/Request'
+import Premium from './Components/Premium'
 
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
                     <Route path='/editProfile' element={<EditProfile />} />
                     <Route path='/connections' element={<Connections />} />
                     <Route path='/requests' element={<Request />} />
+                    <Route path="/premium" element={<Premium />} />
                 </Route>
             </Routes>
         </BrowserRouter>
