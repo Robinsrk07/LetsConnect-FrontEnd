@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import { BASE_URL } from "./utils/Constants";
 
 const Premium = () => {
 
@@ -7,7 +8,7 @@ const[isUserPremium,setUserPremium] = useState(false);
 
 
 const verifyPremiumUser = async()=>{
- const res = await axios.get("http://localhost:7000/premium/verify",{},{withCredentials:true})
+ const res = await axios.get(BASE_URL + "/payment/premium/verify",{},{withCredentials:true})
  
 if(res.data.isPremium){
   setUserPremium(true)
@@ -16,7 +17,7 @@ if(res.data.isPremium){
 }
  const  handleCreateOrder=async(type)=>{
 
-const res = await axios.post(`http://localhost:7000/payment/createOrder`,
+const res = await axios.post(BASE_URL + "/payment/createOrder",
  {
   membershipType :type
 }

@@ -80,7 +80,7 @@ const[status,setStatus]= useState(false)
 
   const fetchUser = async () => {
     try {
-      const res = await axios.get(BASE_URL + '/profile/view', {
+      const res = await axios.get(BASE_URL + '/userService/profile/view', {
         withCredentials: true
       })
       dispatch(addUser(res.data)) 
@@ -137,7 +137,7 @@ const[status,setStatus]= useState(false)
 
       console.log("hello");
       
-      const response = await axios.patch(BASE_URL + '/profile/edit', updatedData, {
+      const response = await axios.patch(BASE_URL + '/userService/profile/edit', updatedData, {
         withCredentials: true
       })
    if(response.status==200){

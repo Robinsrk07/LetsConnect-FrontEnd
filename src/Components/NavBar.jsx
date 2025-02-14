@@ -11,7 +11,7 @@ const Navbar = () => {
 
   const handleLogout =async()=>{
       try{
-       await axios.post(BASE_URL+"/logout",{},{withCredentials:true})
+       await axios.post(BASE_URL+"/auth/logout",{},{withCredentials:true})
        dispatch(removeUser())
        navigate('/login')
 
@@ -35,9 +35,9 @@ const Navbar = () => {
         <p>Welcome ,{user.firstName} </p>
         <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
             <div className="w-10 rounded-full">
-          <img
+          {/* <img
             alt="Tailwind CSS Navbar component"
-            src={user.photoUrl[1]} />
+            src={user.photoUrl[1]} /> */}
         </div>
         </div>
         <ul

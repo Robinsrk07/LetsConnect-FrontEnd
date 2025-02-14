@@ -12,6 +12,7 @@ import EditProfile from './Components/EditProfile'
 import Connections from './Components/Connections'
 import Request from './Components/Request'
 import Premium from './Components/Premium'
+import Chat from './Components/Chat'
 
 
 function App() {
@@ -28,7 +29,9 @@ function App() {
                     <Route path='/connections' element={<Connections />} />
                     <Route path='/requests' element={<Request />} />
                     <Route path="/premium" element={<Premium />} />
-                </Route>
+                    <Route path="/chat/:toUserId" element={<Chat />} />
+
+                </Route> 
             </Routes>
         </BrowserRouter>
         </Provider>

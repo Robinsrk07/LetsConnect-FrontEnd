@@ -15,7 +15,7 @@ const Request = () => {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await axios.get(`${BASE_URL}/user/requests/received`, {
+      const response = await axios.get(`${BASE_URL}/userService/requests/received`, {
         withCredentials: true
       })
       console.log(response.data);
@@ -31,11 +31,11 @@ const Request = () => {
 
   const reviewRequest = async (status, UserID) => {
     try {
-      await axios.post(`${BASE_URL}/request/review/${status}/${UserID}`, {}, {
+      await axios.post(`${BASE_URL}/userService/request/review/${status}/${UserID}`, {}, {
         withCredentials: true
       })
       if(status==="accepted"){
-        const response =await axios.get(BASE_URL + "/user/connection",{withCredentials:true})
+        const response =await axios.get(BASE_URL + "/userService/connection",{withCredentials:true})
         dispatch(addConnection(response.data.data))
       }
       

@@ -18,7 +18,7 @@ const Feed =()=>{
   const getFeed =async()=>{
     if(feed) return
     try{
-        const res = await axios.get(BASE_URL +"/feed",{withCredentials:true});     
+        const res = await axios.get(BASE_URL +"/userService/feed",{withCredentials:true});     
         console.log("response",res);
            
         dispatch(addFeed(res.data))
@@ -30,7 +30,7 @@ const Feed =()=>{
         getFeed()
               },[])
 if(!feed) return
- if(feed==null|| feed.users.length==0)return  (<div>no users found</div>)
+ if(feed==null|| feed.users.length==0||feed.users== undefined)return  (<div>no users found</div>)
 
     return (
        

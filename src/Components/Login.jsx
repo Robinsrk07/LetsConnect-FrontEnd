@@ -61,7 +61,7 @@ const Login = () => {
     
     const handleLogin = async () => {
         try {
-            const res = await axios.post(BASE_URL + '/login', {
+            const res = await axios.post(BASE_URL + '/auth/login', {
                 emailId, password
             }, { withCredentials: true });
             dispatch(addUser(res.data));
@@ -102,7 +102,7 @@ const Login = () => {
     };
     const handleOtp =async()=>{
       try{
-        const res= await axios.post(BASE_URL + "/send-otp",{email:emailId},{withCredentials:true})
+        const res= await axios.post(BASE_URL + "/auth/send-otp",{email:emailId},{withCredentials:true})
         if(res.status==200){
           setOtp(true)
           setVerifyOtp(true)
@@ -124,7 +124,7 @@ const Login = () => {
 
     const handleOtpverify=async()=>{
       try{
-        const res = await axios.post(BASE_URL + "/verify-otp",{otp:otpSign,email:emailId},{withCredentials:true})
+        const res = await axios.post(BASE_URL + "/auth/verify-otp",{otp:otpSign,email:emailId},{withCredentials:true})
      
         setOtpSuccess(true)
         setOtpError(false)
@@ -140,7 +140,7 @@ const Login = () => {
 
       const handleSignUp =async()=>{
         try {
-          const res = await axios.post(BASE_URL + "/signup",{
+          const res = await axios.post(BASE_URL + "/auth/signup",{
             firstName:firstName,
             lastName:lastName,
             emailId:emailId,
