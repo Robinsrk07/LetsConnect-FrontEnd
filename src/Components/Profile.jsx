@@ -1,9 +1,10 @@
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { BASE_URL } from "./utils/Constants";
+//import { BASE_URL } from "./utils/Constants";
 import { addUser } from "./utils/userSlice";
 import { useEffect } from "react";
 import { Link } from "react-router";
+const BASE_URL = import.meta.env.VITE_API_URL_USER_SERVICE
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -11,7 +12,7 @@ const Profile = () => {
 
   const fetchUser = async () => {
     try {
-      const resp = await axios.get(BASE_URL + "/userService/profile/view", { withCredentials: true });
+      const resp = await axios.get( `${BASE_URL}/userService/profile/view`, { withCredentials: true });
       dispatch(addUser(resp.data));
     } catch (err) {
       console.log(err);

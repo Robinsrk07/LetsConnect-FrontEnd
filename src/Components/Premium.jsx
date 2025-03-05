@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
-import { BASE_URL } from "./utils/Constants";
+//import { BASE_URL } from "./utils/Constants";
+const BASE_URL = import.meta.env.VITE_API_URL_PAYMENT_SERVICE
 
 const Premium = () => {
 
@@ -8,7 +9,7 @@ const[isUserPremium,setUserPremium] = useState(false);
 
 
 const verifyPremiumUser = async()=>{
- const res = await axios.get(BASE_URL + "/payment/premium/verify",{},{withCredentials:true})
+ const res = await axios.get( `${BASE_URL}/payment/premium/verify`,{},{withCredentials:true})
  
 if(res.data.isPremium){
   setUserPremium(true)
@@ -17,15 +18,20 @@ if(res.data.isPremium){
 }
  const  handleCreateOrder=async(type)=>{
 
-const res = await axios.post(BASE_URL + "/payment/createOrder",
+const res = await axios.post( `${BASE_URL}/payment/createOrder`,
+
+  
  {
   membershipType :type
 }
 ,{withCredentials:true});
-
-const {amount,currency,orderId,notes}= res.data._doc
-const{key_id}= res.data
+console.log(res)
 console.log(res.data);
+
+const {amount,currency,orderId,notes}= res.data.order
+console.log(amount);
+
+const{key_id}= res.data
 
 const options = {
   key: key_id, // Replace with your Razorpay key_id

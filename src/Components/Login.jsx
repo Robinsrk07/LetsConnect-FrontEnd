@@ -3,9 +3,10 @@ import axios from 'axios';
 import { useDispatch } from "react-redux";
 import { addUser } from "./utils/userSlice";
 import { useNavigate } from "react-router";
-import { BASE_URL } from "./utils/Constants";
+//import { BASE_URL } from "./utils/Constants";
 import { validateName, validateEmailId, validatePassword, validateConfirmPassword } from './utils/formValidation';
 import { useEffect } from "react";
+const BASE_URL = import.meta.env.VITE_API_URL_AUTH_SERVICE
 
 
 const Login = () => {
@@ -61,7 +62,7 @@ const Login = () => {
     
     const handleLogin = async () => {
         try {
-            const res = await axios.post(BASE_URL + '/auth/login', {
+            const res = await axios.post(`${BASE_URL}/auth/login`, {
                 emailId, password
             }, { withCredentials: true });
             dispatch(addUser(res.data));
@@ -102,7 +103,7 @@ const Login = () => {
     };
     const handleOtp =async()=>{
       try{
-        const res= await axios.post(BASE_URL + "/auth/send-otp",{email:emailId},{withCredentials:true})
+        const res= await axios.post(`${BASE_URL}/auth/send-otp`,{email:emailId},{withCredentials:true})
         if(res.status==200){
           setOtp(true)
           setVerifyOtp(true)
@@ -124,7 +125,7 @@ const Login = () => {
 
     const handleOtpverify=async()=>{
       try{
-        const res = await axios.post(BASE_URL + "/auth/verify-otp",{otp:otpSign,email:emailId},{withCredentials:true})
+        const res = await axios.post(`${BASE_URL}/auth/verify-otp`,{otp:otpSign,email:emailId},{withCredentials:true})
      
         setOtpSuccess(true)
         setOtpError(false)
@@ -140,7 +141,7 @@ const Login = () => {
 
       const handleSignUp =async()=>{
         try {
-          const res = await axios.post(BASE_URL + "/auth/signup",{
+          const res = await axios.post(`${BASE_URL}/auth/signup`,{
             firstName:firstName,
             lastName:lastName,
             emailId:emailId,

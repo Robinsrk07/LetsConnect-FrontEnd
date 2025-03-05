@@ -12,7 +12,7 @@ const feedSlice = createSlice({
             
             return {
                 ...state,
-                users: state.users.filter((user) => user._id !== action.payload)
+                users: state.users.filter((user) => user.userId !== action.payload)
             };
         }
     }

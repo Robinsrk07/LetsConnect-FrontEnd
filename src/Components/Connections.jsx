@@ -1,10 +1,10 @@
 import axios from "axios";
-import { BASE_URL } from "./utils/Constants";
+//import { BASE_URL } from "./utils/Constants";
 import { useEffect, useState } from "react";
 import { addConnection } from "./utils/connectionSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-
+  const BASE_URL = import.meta.env.VITE_API_URL_USER_SERVICE
 const Connections = () => {
     const dispatch = useDispatch();
     const connections = useSelector((store) => store.connection);
@@ -13,7 +13,7 @@ const Connections = () => {
 
     const fetchConnection = async () => {
         try {
-            const response = await axios.get(BASE_URL + "/userService/connection", { withCredentials: true });
+            const response = await axios.get(`${BASE_URL}/userService/connection`, { withCredentials: true });
             dispatch(addConnection(response.data.data));
             setError(null);
         } catch (error) {
@@ -28,7 +28,7 @@ const Connections = () => {
         if (connections.length === 0) {
             fetchConnection();
         }
-    }, [connections]);
+    }, []);
 
     if (isLoading) {
         return (
@@ -53,7 +53,7 @@ const Connections = () => {
     return (
         <div>
             {connections.map((connection) => {
-                const { firstName, lastName, photoUrl, age, gender, about, _id } = connection;
+                const { firstName, lastName, photoUrl, age, gender, about, userId,_id } = connection;
 
                 return (
                     <div key={_id} className="m-4 p-4 rounded-lg bg-base-200">
@@ -69,7 +69,7 @@ const Connections = () => {
                                 {about && <p className="mt-2">{about}</p>}
                             </div>
                             <div className="flex gap-4">
-                                <Link to={"/chat/" + _id}>
+                                <Link to={"/chat/" + userId}>
                                     <button className="btn btn-xs sm:btn-sm md:btn-md lg:btn-lg btn-success">Send Message</button>
                                 </Link>
                             </div>

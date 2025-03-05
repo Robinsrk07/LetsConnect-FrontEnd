@@ -2,8 +2,9 @@ import axios from "axios"
 import { useDispatch, useSelector } from "react-redux"
 import { addRequest } from "./utils/requestSlice"
 import { useEffect, useState } from "react"
-import { BASE_URL } from "./utils/Constants"
+//import { BASE_URL } from "./utils/Constants"
 import { addConnection } from "./utils/connectionSlice"
+const BASE_URL = import.meta.env.VITE_API_URL_USER_SERVICE
 
 const Request = () => {
   const dispatch = useDispatch()
@@ -35,7 +36,7 @@ const Request = () => {
         withCredentials: true
       })
       if(status==="accepted"){
-        const response =await axios.get(BASE_URL + "/userService/connection",{withCredentials:true})
+        const response =await axios.get( `${BASE_URL}/userService/connection`,{withCredentials:true})
         dispatch(addConnection(response.data.data))
       }
       
@@ -65,7 +66,8 @@ const Request = () => {
   return (
     <div className="space-y-4">
       {request.data.map((connection) => {
-        const { firstName, lastName, photoUrl, age, gender, about, emailId} = connection.senderId
+        const { firstName, lastName, photoUrl, age, gender, about, emailId} = connection.senderInfo
+
         const{_id}=connection
 
         return (

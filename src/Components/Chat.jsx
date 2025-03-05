@@ -1,286 +1,136 @@
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router";
-import { createSocketConnection } from "./utils/socket";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import axios from "axios";
-import VideoFrame from "./VedioFrame";
-import {BASE_URL}  from "./utils/Constants"
+import { useParams } from "react-router";
+import { useChatData } from "../hooks/userChatData"; // your custom hook for fetching chat data
+import socket from "../Components/utils/socket"; // singleton socket instance
 
 const Chat = () => {
   const { toUserId } = useParams();
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState(""); 
-  const [isLoading, setIsLoading] = useState(true);
-  const [onCall, setOnCall] = useState(false);
-  const [isAudioOnly, setIsAudioOnly] = useState(false);
-
-  const [toUser, setToUser] = useState(null); // To hold the recipient user
+  const [inputMessage, setInputMessage] = useState("");
   const user = useSelector((store) => store.user);
-  const socket = useRef(null);
-  const userId = user?._id;
+  const userId = user?.userId;
+  const { messages, endUserData, loading, error,setMessages } = useChatData(userId, toUserId);
 
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const pc = useRef(new RTCPeerConnection());
-  const localStream = useRef(null);
-
-  
-
-  const startCall= async (audioOnly=false) => {
-    setOnCall(true);
-    setIsAudioOnly(audioOnly);
-
-    const mediaConstraints = audioOnly
-    ?{video:false,audio:true}:{video:true,audio:true}
-
-
-    localStream.current = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    if(!audioOnly){
-      localVideoRef.current.srcObject = localStream.current;
-    }
-   
-    localStream.current.getTracks().forEach(track => pc.current.addTrack(track, localStream.current));
-
-
-
-    pc.current.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.current.emit("iceCandidate", { candidate: event.candidate, toUserId });
-      }
-    };
-
-       pc.current.ontrack = (event) => {
-      if (!audioOnly) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      } else {
-        // For audio-only calls, we still need to handle the remote audio stream
-        const audioElement = new Audio();
-        audioElement.srcObject = event.streams[0];
-        audioElement.play();
-      }
-    };
-
-    const offer = await pc.current.createOffer();
-    await pc.current.setLocalDescription(offer);
-    socket.current.emit("offer", { offer, toUserId,userId,isAudioOnly: audioOnly 
-    });
-  };
- 
-  const handleVideoCall = () => startCall(false);
-  const handleAudioCall = () => startCall(true);
-
-
-
- const endCall = () => {
-    setOnCall(false);
-    setIsAudioOnly(false);
-    
-    // Stop all tracks in the local stream
-    if (localStream.current) {
-      localStream.current.getTracks().forEach(track => track.stop());
-    }
-    
-    pc.current.close();
-    // Create a new RTCPeerConnection for future calls
-    pc.current = new RTCPeerConnection();
-  };
-
-
-
+  //console.log(messages)
 
   const handleSendMessage = async () => {
     if (inputMessage.trim()) {
       const newMessage = {
         text: inputMessage,
         timestamp: new Date().toLocaleTimeString(),
-        sender: user._id,
+        senderId: user.userId,
       };
+
+      setMessages((prevMessages)=>[...prevMessages,newMessage])
       setInputMessage("");
-      socket.current.emit("sendMessage", { newMessage, toUserId, userId });
+      socket.emit("sendMessage", { newMessage, toUserId, userId });
     }
   };
-
-  const fetchChat = async () => {
-    try {
-      const chat = await axios.post(BASE_URL + "/chat/chats" , { userId, toUserId }, { withCredentials: true });
-      setMessages(chat.data.messages);
-    } catch (error) {
-      console.error("Error fetching chat:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchToUser = async (toUserId) => {
-    try {
-      const response = await axios.get(BASE_URL + "/chat/endUser", { params: { toUserId }, withCredentials: true });
-      setToUser(response.data);
-    } catch (err) {
-      console.error("Error fetching endUser:", err);
-    }
-  };
- // const[touser]=toUser
-
-  useEffect(() => {
-    if (toUserId) fetchToUser(toUserId);
-  }, [toUserId]);
-
-  useEffect(() => {
-    if (userId && toUserId) fetchChat();
-  }, [userId, toUserId]);
-
-  useEffect(() => {
-    if (!userId || !toUserId) return;
-
-    socket.current = createSocketConnection();
-
-    socket.current.on("connect", () => {
-      console.log("Socket connected with ID:", socket.current.id);
-    });
-
-    socket.current.on("disconnect", (reason) => {
-      console.log("Socket disconnected. Reason:", reason);
-    });
-
-    socket.current.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-    });
-
-    socket.current.emit("joinchat", { userId, toUserId });
-
-    socket.current.on("receiveMessage", (msg) => {
-      setMessages((prevMessages) => [...prevMessages, msg.msg]);
-    });
-
-    socket.current.on("offer", async ({ offer, fromUserId }) => {
-      if (fromUserId === toUserId) {
-        setOnCall(true);
-        setIsAudioOnly(isAudioOnly);
-        localStream.current = await navigator.mediaDevices.getUserMedia({
-          video: !isAudioOnly,
-          audio: true
-        });
-        if (!isAudioOnly) {
-          localVideoRef.current.srcObject = localStream.current;
-        }
-
-
-        await pc.current.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.current.createAnswer();
-        await pc.current.setLocalDescription(answer);
-        socket.current.emit("answer", { answer, toUserId: fromUserId,userId });
+// In your Chat component, inside a useEffect:
+    useEffect(() => {
+      if (userId && toUserId) {
+        socket.emit("joinRoom", { userId, toUserId });
       }
-    });
+    }, [userId, toUserId]);
 
+  useEffect(() => {
+    const handleReceiveMessage = ({ msg }) => {
+      console.log("Message received from server:", msg);
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    };
 
-    socket.current.on("answer", async ({ answer }) => {
-      await pc.current.setRemoteDescription(new RTCSessionDescription(answer));
-    });
-
-    socket.current.on("iceCandidate", async ({ candidate }) => {
-      try {
-        await pc.current.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (err) {
-        console.error("Error adding received ICE candidate", err);
-      }
-    });
+    socket.on("receiveMessage", handleReceiveMessage);
 
     return () => {
-      if (socket.current) {
-        socket.current.disconnect();
-        socket.current.off();
-      }
-      if (localStream.current) {
-        localStream.current.getTracks().forEach(track => track.stop());
-      }
-
+      socket.off("receiveMessage", handleReceiveMessage);
     };
-  }, [userId, toUserId]);
+  }, [setMessages]);
+
+
+
+
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading chat...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500">
+        Error loading chat: {error.message}
+      </div>
+    );
 
   return (
-    <div className="flex flex-col h-screen p-4 bg-base-200">
-      <div className="flex items-center justify-between mb-4 sticky top-0 bg-base-200 z-10 p-4 border-b">
-        <div className="flex items-center gap-2">
-          <button 
-            className="btn btn-info mr-2" 
-            title="Start Video Call"
-            onClick={handleVideoCall}
-            disabled={onCall}
-          >
-            🎥
-          </button>
-          <button 
-            className="btn btn-info" 
-            title="Start Audio Call"
-            onClick={handleAudioCall}
-            disabled={onCall}
-          >
-            🎤
-          </button>
-          {onCall && (
-            <button 
-              className="btn btn-error ml-2" 
-              onClick={endCall}
-            >
-              End Call
-            </button>
+    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      {/* Header */}
+      <div className="bg-white shadow-md p-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center space-x-4">
+          {endUserData && (
+            <>
+              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                <span className="text-lg font-semibold text-gray-700">
+                  {endUserData.name?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {endUserData.name}
+                </h2>
+                <p className="text-sm text-gray-500">Online</p>
+              </div>
+            </>
           )}
         </div>
       </div>
 
-      {!onCall ? (
-        <div className="flex-1 overflow-y-auto mb-4">
-          {messages.map((message) => (
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {Array.isArray(messages) &&
+          messages.map((message) => (
             <div
               key={`${message.timeStamp}-${message.senderId}`}
-              className={`chat ${message.senderId === userId ? "chat-end" : "chat-start"}`}
+              className={`flex ${
+                message.senderId === userId ? "justify-end" : "justify-start"
+              }`}
             >
-              <div className="chat-bubble bg-primary text-white">
-                {message.text}
-                <div className="text-xs opacity-50 mt-1">
-                  {message.timeStamp}
-                </div>
+              <div
+                className={`max-w-[70%] p-3 rounded-lg ${
+                  message.senderId === userId
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-gray-800 shadow-sm"
+                }`}
+              >
+                <p className="text-sm">{message.text}</p>
+                <p className="text-xs mt-1 opacity-70">
+                  {new Date(message.timeStamp).toLocaleTimeString()}
+                </p>
               </div>
             </div>
           ))}
-        </div>
-      ) : (
-        isAudioOnly ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-2xl mb-4">🎤 Audio Call in Progress</div>
-              <button 
-                className="btn btn-error" 
-                onClick={endCall}
-              >
-                End Call
-              </button>
-            </div>
-          </div>
-        ) : (
-          <VideoFrame 
-            endVideoCall={endCall} 
-            localVideoRef={localVideoRef} 
-            remoteVideoRef={remoteVideoRef} 
-          />
-        )
-      )}
+      </div>
 
-      {!onCall && (
+      {/* Input Area */}
+      <div className="bg-white p-4 shadow-md">
         <div className="flex gap-2 mb-4">
           <input
             type="text"
             placeholder="Type a message..."
-            className="input input-bordered flex-1"
+            className="input input-bordered flex-1 rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
           />
-          <button className="btn btn-primary" onClick={handleSendMessage}>
+          <button
+            className="btn btn-primary rounded-full px-6"
+            onClick={handleSendMessage}
+          >
             Send
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };
