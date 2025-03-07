@@ -1,7 +1,7 @@
 // src/utils/socketInstance.js
 import { io } from "socket.io-client";
 
-const socket = io("https://api.letsconnecty.shop:5001", {
+const socket = io("https://api.letsconnecty.shop", {
   withCredentials: true,
   transports: ["polling", "websocket"],
   path: "/socket.io",
