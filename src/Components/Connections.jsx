@@ -53,19 +53,19 @@ const Connections = () => {
     return (
         <div>
             {connections.map((connection) => {
-                const { firstName, lastName, photoUrl, age, gender, about, userId,_id } = connection;
+                const {  photoUrl, name, gender, about, userId,_id } = connection;
 
                 return (
                     <div key={_id} className="m-4 p-4 rounded-lg bg-base-200">
                         <div className="flex items-center gap-4">
                             <img
                                 src={photoUrl[0] || '/default-avatar.png'}
-                                alt={`${firstName}'s profile`}
+                                alt={`${name}'s profile`}
                                 className="w-16 h-16 rounded-full object-cover"
                             />
                             <div className="flex-1">
-                                <h3 className="font-semibold">{firstName} {lastName}</h3>
-                                <p className="text-sm">{age} years • {gender}</p>
+                                <h3 className="font-semibold">{name}</h3>
+                                <p className="text-sm"> {gender}</p>
                                 {about && <p className="mt-2">{about}</p>}
                             </div>
                             <div className="flex gap-4">

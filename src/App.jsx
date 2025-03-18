@@ -2,7 +2,7 @@
 import './App.css'
 import Body from './Components/Body'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import Login from './Components/Login'
+//import Login from './Components/Login'
 import SignUp from './Components/SignUp'
 import Profile from './Components/Profile'
 import Feed  from './Components/Feed'
@@ -13,7 +13,7 @@ import Connections from './Components/Connections'
 import Request from './Components/Request'
 import Premium from './Components/Premium'
 import Chat from './Components/Chat'
-
+import Home from "./Components/Home"
 
 function App() {
     return (
@@ -21,8 +21,9 @@ function App() {
         <BrowserRouter basename='/'>
             <Routes>
                 <Route path='/' element={<Body/>}>
-                    <Route path='/' element={<Feed/>} />
-                    <Route path='/login' element={<Login />} />
+                    <Route path='/' element={<Home/>} />
+                    <Route path='/feed' element={<Feed/>} />
+                    {/* <Route path='/login' element={<Login />} /> */}
                     <Route path='/signUp' element={<SignUp />} />
                     <Route path='/Profile' element={<Profile />} />
                     <Route path='/editProfile' element={<EditProfile />} />

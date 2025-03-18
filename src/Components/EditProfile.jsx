@@ -1,308 +1,386 @@
-import axios from "axios"
-import { useDispatch, useSelector } from "react-redux"
-//import { BASE_URL } from "./utils/Constants"
-import { useEffect, useState } from "react"
-import { addUser } from "./utils/userSlice" 
-const BASE_URL = import.meta.env.VITE_API_URL_USER_SERVICE
+import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { addUser } from "./utils/userSlice";
+
+const BASE_URL = import.meta.env.VITE_API_URL_USER_SERVICE;
 
 const EditProfile = () => {
-  const user = useSelector((store) => store.user)
-  const dispatch = useDispatch()
-
- 
-  const[error,setError] = useState({
-    firstName:null,
-    lastName:null,
-    age:null,
-    gender:null,
-    about:null,
-    skills:null,
-    photoUrl:null
-  })
-
-
-  const validateinput= (name,value)=>{
-    switch(name){
-        case "firstName":
-            if(!value)return "*Required Feild";
-            if(value.length<3) return "first name must be at least 3 characters";
-            if(value.length>50) return "fisrt name cannot exceed 50 character";
-            if (!/^[A-Za-z\s]+$/.test(value)) return 'First name can only contain letters and spaces';
-            return ""
-
-       case 'lastName':
-                if (!value) return 'Last name is required';
-                if (value.length < 3) return 'Last name must be at least 3 characters';
-                if (value.length > 40) return 'Last name cannot exceed 40 characters';
-                if (!/^[A-Za-z\s]+$/.test(value)) return 'Last name can only contain letters and spaces';
-                return '';
-        
-       case 'age':
-                if (!value) return 'Age is required';
-                if (isNaN(value) || value < 18 || value > 100) return 'Age must be between 18 and 100';
-                return '';
-        
-        case 'about':
-                if (value.length > 500) return 'About section cannot exceed 500 characters';
-                return '';
-        
-        case 'skills':
-                if (value.length > 10) return 'Cannot have more than 10 skills';
-                return '';
-        
-              default:
-                return '';
-
-    }
-  }
-
-
-const[status,setStatus]= useState(false)
-  const [firstName, setFirstname] = useState('')
-  const [lastName, setLastname] = useState('')
-  const [age, setAge] = useState('')
-  const [gender, setGender] = useState('')
-  const [about, setAbout] = useState('')
-  const [skills, setSkills] = useState([])
-  const [photoUrl, setPhotoUrl] = useState([])
+  const user = useSelector((store) => store.user);
+  const dispatch = useDispatch();
 
   
+  const [formData, setFormData] = useState({
+    name: "",
+    about: "",
+    dob: "",
+    gender: "",
+    pincode: "",
+    town: "",
+  });
+
+  const [photos, setPhotos] = useState([]); 
+  console.log("photos",photos);
+  
+  const [newPhoto, setNewPhoto] = useState(null); 
+  const [previewUrl, setPreviewUrl] = useState(""); // Preview of new photo
+  const [isLoading, setIsLoading] = useState(false);
+
+  const formatDate = (isoDate) => {
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0"); 
+    const year = String(date.getFullYear()).slice(-2); 
+  
+    return `${day}/${month}/${year}`;
+  };
+  
+  // Initialize form data and photos when user data is available
   useEffect(() => {
     if (user) {
-      setFirstname(user.firstName || '')
-      setLastname(user.lastName || '')
-      setAge(user.age || '')
-      setGender(user.gender || '')
-      setAbout(user.about || '')
-      setSkills(user.skills || [])
-      setPhotoUrl(user.photoUrl || [])
+      setFormData({
+        name: user.name || "",
+        about: user.about || "",
+        dob: user.dob ? formatDate(user.dob) : "", 
+        gender: user.gender || "",
+        pincode: user.pincode || "",
+        town: user.town || "",
+      });
+      setPhotos(user.photoUrl || []); // Initialize photos
     }
-  }, [user])
+  }, [user]);
 
-  const fetchUser = async () => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handlePhotoChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setNewPhoto(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddPhoto = async () => {
+    if (!newPhoto) return;
+
+    setIsLoading(true);
+
     try {
-      const res = await axios.get(`${BASE_URL}/userService/profile/view`, {
-        withCredentials: true
-      })
-      dispatch(addUser(res.data)) 
-    } catch (error) {
-      console.error("Error fetching user:", error)
-    }
-  }
+      // Upload new photo to backend
+      const formData = new FormData();
+      formData.append("photos", newPhoto);
 
-  useEffect(() => {
-    if (!user) {
-      fetchUser()
+      const response = await axios.post(`${BASE_URL}/upload-photo`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },withCredentials:true
+      });
+
+
+      console.log(response.data[0]);
+      
+      // Update photos array with the new photo URL
+      const newPhotoUrl = response.data[0];
+      const updatedPhotos = [...photos, newPhotoUrl];
+      setPhotos(updatedPhotos);
+
+      // Update Redux store
+      dispatch(
+        addUser({
+          ...user,
+          photoUrl: updatedPhotos,
+        })
+      );
+
+      // Reset new photo state
+      setNewPhoto(null);
+      setPreviewUrl("");
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user]) 
+  };
+
+  const handleDeletePhoto = async (photoUrl) => {
+    setIsLoading(true);
+
+    try {
+        const encodedPhotoUrl = encodeURIComponent(photoUrl);
+        await axios.delete(`${BASE_URL}/delete-photo/${encodedPhotoUrl}`, {
+            withCredentials: true,
+        });
+
+        const updatedPhotos = photos.filter((url) => url !== photoUrl);
+        setPhotos(updatedPhotos);
+
+        dispatch(
+            addUser({
+                ...user,
+                photoUrl: updatedPhotos,
+            })
+        );
+    } catch (error) {
+        console.error("Error deleting photo:", error);
+    } finally {
+        setIsLoading(false);
+    }
+};
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setIsLoading(true);
+  
     try {
-
-      const newError ={
-        firstName: validateinput('firstName',firstName),
-        lastName: validateinput('lastName',lastName),
-        age:validateinput('age',age),
-        gender:'',
-        about:validateinput('about',about),
-        skills:validateinput('skills',skills),
-        photoUrl:''
-      }
-      console.log("error",newError);
       
-  if(Object.values(newError).some((erroMessage)=>erroMessage !=='')){
-
-    setError(newError)
-   return
-  }
-
-        setError({
-            firstName: null,
-            lastName: null,
-            age:null,
-            gender:null,
-            about:null,
-            skills:null,
-            photoUrl:null
-          })
-      const updatedData = {
-        firstName,
-        lastName,
-        age,
-        gender,
-        about,
-        skills,
-        photoUrl
-      }
-
-      console.log("hello");
-      
-      const response = await axios.patch(`${BASE_URL}/userService/profile/edit`, updatedData, {
-        withCredentials: true
-      })
-   if(response.status==200){
-    setStatus(true)
-    setInterval(()=>{setStatus(false)},3000)
-    fetchUser()
-   }   
-     
+      const response = await axios.patch(
+        `${BASE_URL}/userService/profile/edit`,
+        {
+          ...formData,
+          photoUrl: photos, 
+        },
+        {
+          headers: {
+            "Content-Type": "application/json", 
+          },
+          withCredentials: true, 
+        }
+      );
+  
+      // Update Redux store
+      dispatch(addUser(response.data));
+  
+      alert("Profile updated successfully!");
     } catch (error) {
-      console.error("Error updating profile:", error)
+      console.error("Error updating profile:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+  
 
   if (!user) {
-    return <div>...loading</div>
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="flex justify-center my-10">
-      <div className="card card-side bg-base-300 shadow-xl">
-        <figure>
-          <img src={photoUrl[1]} alt="Profile" className="w-64 h-64 object-cover" />
-        </figure>
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <label className="form-control w-full max-w-xs">
-           { status && <div role="alert" className="alert alert-success mb-2">
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-  <span>Information updated !</span>
-</div>}
-            {error.firstName && <div role="alert" className="alert alert-error mt-3 ">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 shrink-0 stroke-current"
-                        fill="none"
-                        viewBox="0 0 24 24">
-                        <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{error.firstName}</span>
-                    </div>}
-              <input
-                type="text"
-                placeholder="FirstName"
-                value={firstName}
-                onChange={(e) => setFirstname(e.target.value)}
-                className="input input-bordered w-full max-w-xs"
-              />
-               {error.lastName && <div role="alert" className="alert alert-error mt-3 ">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 shrink-0 stroke-current"
-                        fill="none"
-                        viewBox="0 0 24 24">
-                        <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{error.lastName}</span>
-                    </div>}
-              <input
-                type="text"
-                placeholder="LastName"
-                value={lastName}
-                onChange={(e) => setLastname(e.target.value)}
-                className="input input-bordered w-full max-w-xs mt-4"
-              />
-              {error.age && <div role="alert" className="alert alert-error mt-3 ">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 shrink-0 stroke-current"
-                        fill="none"
-                        viewBox="0 0 24 24">
-                        <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{error.age}</span>
-                    </div>}
-              <input
-                type="number"
-                placeholder="age"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                className="input input-bordered w-full max-w-xs mt-4"
-              />
+    <div className="max-w-4xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Edit Profile</h1>
 
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="select select-bordered w-full max-w-xs mt-4"
-              >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-              {error.about && <div role="alert" className="alert alert-error mt-3 ">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 shrink-0 stroke-current"
-                        fill="none"
-                        viewBox="0 0 24 24">
-                        <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{error.about}</span>
-                    </div>}
-              <textarea
-                placeholder="About"
-                value={about}
-                onChange={(e) => setAbout(e.target.value)}
-                className="textarea textarea-bordered w-full max-w-xs mt-4"
-              />
-              {error.skills && <div role="alert" className="alert alert-error mt-3 ">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 shrink-0 stroke-current"
-                        fill="none"
-                        viewBox="0 0 24 24">
-                        <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{error.skills}</span>
-                    </div>}
-              <input
-                type="text"
-                placeholder="Skills (comma-separated)"
-                value={skills.join(', ')}
-                onChange={(e) => setSkills(e.target.value.split(',').map(skill => skill.trim()))}
-                className="input input-bordered w-full max-w-xs mt-4"
-              />
-             
-             <input
-             type="text"
-             placeholder="photoUrl"
-             value={photoUrl.join(",")}
-             onChange={(e)=>setPhotoUrl(e.target.value.split(',').map(photo=>photo.trim()))}
-             className="input input-bordered w-full max-w-xs mt-4"
-             />
-              <button type="submit" className="btn btn-primary mt-4">
-                Save Changes
-              </button>
-            </label>
-          </form>
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Name Input */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Name</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded-md"
+            />
+          </div>
+
+          {/* Gender Input */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Gender</label>
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Date of Birth Input */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Date of Birth</label>
+            <input
+              type="date"
+              name="dob"
+              value={formData.dob}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded-md"
+            />
+          </div>
+
+          {/* Pincode Input */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Pincode</label>
+            <input
+              type="text"
+              name="pincode"
+              value={formData.pincode}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded-md"
+            />
+          </div>
+
+          {/* Town Input */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Town</label>
+            <input
+              type="text"
+              name="town"
+              value={formData.town}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded-md"
+            />
+          </div>
+
+          {/* About Input */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1">About</label>
+            <textarea
+              name="about"
+              value={formData.about}
+              onChange={handleInputChange}
+              rows="3"
+              className="w-full px-3 py-2 border rounded-md"
+            ></textarea>
+          </div>
         </div>
-      </div>
-    </div>
-  )
-}
 
-export default EditProfile
+        {/* Photo Management Section */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3">Profile Photos</h2>
+
+          {/* Photo Preview Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+            {photos.map((photoUrl, index) => (
+              <div key={index} className="relative group border rounded-md overflow-hidden">
+                <img
+                  src={photoUrl}
+                  alt={`Profile Photo ${index + 1}`}
+                  className="w-full h-32 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDeletePhoto(photoUrl)}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md"
+                  disabled={isLoading}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
+
+            {/* New Photo Preview */}
+            {previewUrl && (
+              <div className="relative border-2 border-blue-500 rounded-md overflow-hidden">
+                <img
+                  src={previewUrl}
+                  alt="New Photo Preview"
+                  className="w-full h-32 object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 text-center">
+                  New Photo
+                </div>
+              </div>
+            )}
+
+            {/* Add Photo Button */}
+            {photos.length < 5 && !previewUrl && (
+              <div
+                onClick={() => document.getElementById("photo-upload").click()}
+                className="border-2 border-dashed border-gray-300 rounded-md h-32 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span className="text-sm text-gray-500 mt-1">Add Photo</span>
+              </div>
+            )}
+          </div>
+
+          {/* Hidden file input */}
+          <input
+            id="photo-upload"
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+
+          {/* Action buttons for new photo */}
+          {previewUrl && (
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={handleAddPhoto}
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300"
+              >
+                {isLoading ? "Uploading..." : "Upload Photo"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewPhoto(null);
+                  setPreviewUrl("");
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <div className="mt-6">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-300"
+          >
+            {isLoading ? "Saving..." : "Save Profile"}
+          </button>
+        </div>
+      </form>c
+    </div>
+  );
+};
+
+export default EditProfile;

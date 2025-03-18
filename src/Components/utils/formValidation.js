@@ -15,12 +15,12 @@ export const validateName = (name) => {
 export const validateEmailId = (email) => {
     const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!email) {
-        return "Email address is required.";
+        return false;
     }
     if (!emailPattern.test(email)) {
-        return "Please enter a valid email address.";
+        return false;
     }
-    return "";
+    return true; // Indicate success explicitly
 };
 
 
@@ -28,12 +28,12 @@ export const validateEmailId = (email) => {
 export const validatePassword = (password) => {
     const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     if (!password) {
-        return "Password is required.";
+        return false;
     }
     if (!passwordPattern.test(password)) {
-        return "use a stong password";
+        return false ;
     }
-    return "";
+    return true;
 };
 
 

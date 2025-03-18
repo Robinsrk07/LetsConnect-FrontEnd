@@ -1,0 +1,22 @@
+/* Fix the navbar at the top */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Ensure it stays above other content */
+    background-color: white; /* Add a background color if needed */
+  }
+  
+  /* Add padding to the body content to account for the fixed navbar */
+  .body-content {
+    padding-top: 60px; /* Adjust this value based on the height of your navbar */
+    min-height: calc(100vh - 60px); /* Ensure the body takes up the remaining height */
+  }
+  
+  /* Footer styling */
+  .footer {
+    background-color: #f8f9fa; /* Example background color */
+    padding: 20px;
+    text-align: center;
+  }

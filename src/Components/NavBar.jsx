@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { removeUser } from "./utils/userSlice";
 const BASE_URL = import.meta.env.VITE_API_URL_AUTH_SERVICE
 
-const Navbar = () => {
+const Navbar = ({onLoginClick}) => {
 
   const user = useSelector((store)=>store.user)  
   const dispatch = useDispatch()
@@ -25,13 +25,29 @@ const Navbar = () => {
   
 
   return (
-    <div className="navbar bg-base-300">
-    <div className="flex-1">
-      <Link to="" className="btn btn-ghost text-xl">LetsConnect</Link>
+    <div className="navbar bg-transparent">
+   <div className="flex-1">
+   <div className="flex-1">
+  <Link to="" className="btn btn-ghost text-xl flex flex-col items-start">
+    <div className="flex items-center gap-4">
+      <span className="text-xl">LETS CONNECT</span>
+      <div></div>
+      <span className="text-xs text-gray-500 pt-2">PRODUCTS</span>
+      <span className="text-xs text-gray-500 pt-2">SAFETY</span>
+      <span className="text-xs text-gray-500 pt-2">SUPPORT</span>
     </div>
+    <div>
+    </div>
+  </Link>
+</div>
+
+
+</div>
+
+
     <div className="flex-none gap-2">
       <div className="form-control">
-        <input type="text" placeholder="Search" className="input input-bordered w-24 md:w-auto" />
+      <button className="btn btn-xs sm:btn-sm md:btn-md lg:btn-lg xl:btn-xl" onClick={onLoginClick}  >login</button>
       </div>
       {user &&<div className="dropdown dropdown-end mx-6">
         <p>Welcome ,{user.firstName} </p>
